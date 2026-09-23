@@ -7,5 +7,6 @@ export default defineConfig({
   clean: true,
   platform: 'node',
   target: 'node24',
+  loader: { '.md': 'text' },
   external: ['@opencode/plugin'],
 });
