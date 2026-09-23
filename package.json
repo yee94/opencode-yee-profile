@@ -1,6 +1,6 @@
 {
   "name": "@yee94/opencode-profile",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Build-first OpenCode V1/V2 plugin: focused specialists, no orchestration runtime",
   "type": "module",
   "main": "./dist/index.mjs",

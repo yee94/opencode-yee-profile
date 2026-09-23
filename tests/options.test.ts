@@ -51,7 +51,7 @@ describe('options', () => {
     [],
   ])('rejects unsupported configuration rather than silently ignoring it: %j', (options) => {
     expect(() => parseOptions(options)).toThrow(
-      'Invalid opencode-yee-profile options',
+      'Invalid @yee94/opencode-profile options',
     );
   });
 });

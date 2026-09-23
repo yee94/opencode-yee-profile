@@ -7,7 +7,7 @@ export function registerAgents(editor: AgentEditor, options: Options): void {
   const build = editor.get('build');
   if (!build || build.hidden || build.mode === 'subagent') {
     throw new Error(
-      'opencode-yee-profile requires the native, visible Build primary agent. Enable Build before loading this plugin.',
+      '@yee94/opencode-profile requires the native, visible Build primary agent. Enable Build before loading this plugin.',
     );
   }
 

@@ -35,7 +35,7 @@ export function parseOptions(input: unknown): Options {
       (issue) => `${issue.path.join('.') || 'options'}: ${issue.message}`,
     );
     throw new Error(
-      `Invalid opencode-yee-profile options:\n${problems.join('\n')}`,
+      `Invalid @yee94/opencode-profile options:\n${problems.join('\n')}`,
     );
   }
   return result.data;
