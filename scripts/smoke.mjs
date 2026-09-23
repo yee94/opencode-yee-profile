@@ -34,7 +34,7 @@ assert.equal(
   'This package must remain a plugin, not a CLI.',
 );
 assert.equal(manifest.exports['.'], './dist/index.mjs');
-assert.equal(plugin.id, 'opencode-yee-profile');
+assert.equal(plugin.id, manifest.name);
 const entrypoints = Host.resolve({
   directory: fileURLToPath(new URL('..', import.meta.url)),
 });

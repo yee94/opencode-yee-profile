@@ -12,7 +12,7 @@ V2，在 `opencode.jsonc` 中加入：
 
 ```jsonc
 {
-  "plugins": ["@yee94/opencode-profile@0.2.0"]
+  "plugins": ["@yee94/opencode-profile@0.2.1"]
 }
 ```
 
@@ -20,7 +20,7 @@ V1 使用同一个包，配置键是单数 `plugin`：
 
 ```jsonc
 {
-  "plugin": ["@yee94/opencode-profile@0.2.0"]
+  "plugin": ["@yee94/opencode-profile@0.2.1"]
 }
 ```
 
@@ -61,7 +61,7 @@ V1 将 `agents` 改为 `agent`。V2 的 variant 写在模型后，如 `provider/
 ```jsonc
 {
   "plugins": [{
-    "package": "@yee94/opencode-profile@0.2.0",
+    "package": "@yee94/opencode-profile@0.2.1",
     "options": { "agents": { "oracle": false } }
   }]
 }
@@ -72,7 +72,7 @@ V1 的插件选项使用元组：
 ```jsonc
 {
   "plugin": [[
-    "@yee94/opencode-profile@0.2.0",
+    "@yee94/opencode-profile@0.2.1",
     { "agents": { "oracle": false } }
   ]]
 }

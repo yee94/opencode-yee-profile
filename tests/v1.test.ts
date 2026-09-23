@@ -19,7 +19,7 @@ describe('V1 adapter', () => {
     await hooks.config?.(config);
     expect(config.agent?.general?.prompt).toBe(specialists.general.system);
     await expect(plugin.server(context, { typo: true })).rejects.toThrow(
-      'Invalid opencode-yee-profile options',
+      'Invalid @yee94/opencode-profile options',
     );
   });
 

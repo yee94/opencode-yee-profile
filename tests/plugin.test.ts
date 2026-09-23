@@ -23,7 +23,7 @@ describe('plugin entry', () => {
     await plugin.setup(context as unknown as Plugin.Context);
     expect(transform).toHaveBeenCalledTimes(1);
     expect(agents.has('designer')).toBe(true);
-    expect(plugin.id).toBe('opencode-yee-profile');
+    expect(plugin.id).toBe('@yee94/opencode-profile');
   });
 
   it('rejects invalid options before registering anything', async () => {
@@ -33,7 +33,7 @@ describe('plugin entry', () => {
         options: { typo: true },
         agent: { transform },
       } as unknown as Plugin.Context),
-    ).rejects.toThrow('Invalid opencode-yee-profile options');
+    ).rejects.toThrow('Invalid @yee94/opencode-profile options');
     expect(transform).not.toHaveBeenCalled();
   });
 });
