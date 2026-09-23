@@ -1,9 +1,16 @@
 import type { Agent } from '@opencode/plugin';
 import designerPrompt from './prompts/designer.md';
 import explorePrompt from './prompts/explore.md';
+import generalPrompt from './prompts/general.md';
 import oraclePrompt from './prompts/oracle.md';
 
 export const specialists = {
+  general: {
+    description:
+      'Execute a scoped engineering task: implement, verify, and report results. Use for delegated coding work with a clear outcome.',
+    system: generalPrompt.trim(),
+    readonly: false,
+  },
   explore: {
     description:
       'Map unfamiliar code to file:line evidence. Skip for a known file or a single lookup.',

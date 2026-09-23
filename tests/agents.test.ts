@@ -15,7 +15,8 @@ describe('agent registration', () => {
     const before = structuredClone(agents);
     registerAgents(editor, parseOptions({}));
     for (const [id, agent] of before) {
-      if (id !== 'explore') expect(agents.get(id)).toEqual(agent);
+      if (id !== 'explore' && id !== 'general')
+        expect(agents.get(id)).toEqual(agent);
     }
     expect(getDefault()).toBe('build');
     expect(agents.has('orchestrator')).toBe(false);
@@ -44,10 +45,16 @@ describe('agent registration', () => {
     registerAgents(
       editor,
       parseOptions({
-        agents: { explore: false, oracle: false, designer: false },
+        agents: {
+          general: false,
+          explore: false,
+          oracle: false,
+          designer: false,
+        },
       }),
     );
     expect(agents.has('explore')).toBe(false);
+    expect(agents.has('general')).toBe(false);
     expect(agents.has('oracle')).toBe(false);
     expect(agents.has('designer')).toBe(false);
     expect(agents.has('build')).toBe(true);
@@ -70,8 +77,11 @@ describe('agent registration', () => {
     );
   });
 
-  it('keeps Designer permission restrictions and prevents recursive delegation', () => {
-    const designer = createAgent('designer');
+  it.each([
+    'general',
+    'designer',
+  ])('keeps %s permission restrictions and prevents recursive delegation', (name) => {
+    const designer = createAgent(name);
     designer.permissions.push({
       action: 'shell',
       resource: 'git push *',
@@ -79,12 +89,12 @@ describe('agent registration', () => {
     });
     const { editor, agents } = createEditor([designer]);
     registerAgents(editor, parseOptions({}));
-    expect(agents.get('designer')?.permissions).toContainEqual({
+    expect(agents.get(name)?.permissions).toContainEqual({
       action: 'shell',
       resource: 'git push *',
       effect: 'deny',
     });
-    expect(agents.get('designer')?.permissions.at(-1)).toEqual({
+    expect(agents.get(name)?.permissions.at(-1)).toEqual({
       action: 'subagent',
       resource: '*',
       effect: 'deny',
@@ -139,9 +149,15 @@ describe('agent registration', () => {
 });
 
 describe('specialist prompts', () => {
-  const budgets = { explore: 250, oracle: 350, designer: 300 } as const;
+  const budgets = {
+    general: 300,
+    explore: 250,
+    oracle: 350,
+    designer: 300,
+  } as const;
 
   it.each([
+    'general',
     'explore',
     'oracle',
     'designer',
@@ -171,6 +187,9 @@ describe('specialist prompts', () => {
   });
 
   it('retains the decisive role boundaries and evidence requirements', () => {
+    expect(specialists.general.system).toMatch(/scoped engineering task/);
+    expect(specialists.general.system).toMatch(/concurrent work/);
+    expect(specialists.general.system).toMatch(/verification results/);
     expect(specialists.explore.system).toMatch(/read-only investigation/);
     expect(specialists.explore.system).toMatch(/file:line evidence/);
     expect(specialists.explore.system).toMatch(/scope searched/);

@@ -17,6 +17,16 @@ describe('options', () => {
     });
   });
 
+  it('supports model selection and disabling for the general executor', () => {
+    expect(parseOptions({ agents: { general: false } }).agents.general).toBe(
+      false,
+    );
+    expect(
+      parseOptions({ agents: { general: { model: 'provider/coder#high' } } })
+        .agents.general,
+    ).toEqual({ model: 'provider/coder#high' });
+  });
+
   it.each([
     'model',
     '/model',

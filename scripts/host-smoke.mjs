@@ -12,7 +12,9 @@ await mkdir(temporaryRoot, { recursive: true });
 const temporary = await mkdtemp(join(temporaryRoot, 'yee-profile-host-'));
 const project = join(temporary, 'project');
 const serviceFile = join(temporary, 'state', 'opencode', 'service-v2.json');
-const pluginPath = fileURLToPath(new URL('..', import.meta.url));
+const pluginPath =
+  process.env.PROFILE_PLUGIN_PATH ||
+  fileURLToPath(new URL('..', import.meta.url));
 const environment = {
   PATH: process.env.PATH,
   HOME: join(temporary, 'home'),
@@ -84,6 +86,7 @@ try {
           options: {
             agents: {
               oracle: false,
+              general: { model: 'example/coder#high' },
               designer: { model: 'example/model#high' },
             },
           },
@@ -108,6 +111,17 @@ try {
     'The plugin modified native Build',
   );
   assert.equal(installed.has('oracle'), false);
+  assert.equal(installed.get('general')?.mode, 'subagent');
+  assert.match(
+    installed.get('general')?.system ?? '',
+    /scoped engineering task/,
+  );
+  assert.equal(installed.get('general')?.model?.variant, 'high');
+  assert.deepEqual(installed.get('general')?.permissions.at(-1), {
+    action: 'subagent',
+    resource: '*',
+    effect: 'deny',
+  });
   assert.equal(installed.get('designer')?.mode, 'subagent');
   assert.equal(installed.get('designer')?.model?.variant, 'high');
   assert.match(

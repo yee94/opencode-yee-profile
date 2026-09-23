@@ -79,12 +79,19 @@ await plugin.setup({
 assert.equal(registrations, 1);
 assert.equal(selected, 'build');
 assert.deepEqual(agents.get('build'), build);
-for (const name of ['explore', 'oracle', 'designer']) {
+const v1Config = {};
+const hooks = await plugin.server({}, {});
+assert.deepEqual(Object.keys(hooks), ['config']);
+await hooks.config(v1Config);
+assert.equal(v1Config.default_agent, 'build');
+assert.equal(v1Config.agent.build, undefined);
+for (const name of ['general', 'explore', 'oracle', 'designer']) {
   const source = await readFile(
     new URL(`../src/prompts/${name}.md`, import.meta.url),
     'utf8',
   );
   assert.equal(agents.get(name).system, source.trim());
+  assert.equal(v1Config.agent[name].prompt, source.trim());
 }
 assert.equal(agents.get('designer').model.variant, 'high');
 console.log(

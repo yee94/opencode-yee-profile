@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const agentNames = ['explore', 'oracle', 'designer'] as const;
+export const agentNames = ['general', 'explore', 'oracle', 'designer'] as const;
 export type AgentName = (typeof agentNames)[number];
 
 const model = z
@@ -18,6 +18,7 @@ const agentOptions = z.union([
 export const optionsSchema = z.strictObject({
   agents: z
     .strictObject({
+      general: agentOptions.optional(),
       explore: agentOptions.optional(),
       oracle: agentOptions.optional(),
       designer: agentOptions.optional(),
