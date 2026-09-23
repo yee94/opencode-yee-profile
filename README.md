@@ -10,7 +10,7 @@ OpenCode V2 插件：保留原生 Build，按需使用 Explore、Oracle、Design
 
 ```jsonc
 {
-  "plugins": ["@yee94/opencode-profile@0.1.0"]
+  "plugins": ["@yee94/opencode-profile@0.1.1"]
 }
 ```
 
@@ -46,7 +46,7 @@ OpenCode V2 插件：保留原生 Build，按需使用 Explore、Oracle、Design
 ```jsonc
 {
   "plugins": [{
-    "package": "@yee94/opencode-profile@0.1.0",
+    "package": "@yee94/opencode-profile@0.1.1",
     "options": { "agents": { "oracle": false } }
   }]
 }
@@ -61,4 +61,5 @@ pnpm check
 ```
 
 将 `plugins` 中的包名替换为本仓库的绝对目录路径。修改后重新构建并重新加载插件。
+专家正文在 `src/prompts/*.md`，由 `src/agents.ts` 导入、tsdown 内联到产物；运行时不读取 Markdown 文件。
 `pnpm smoke:host -- opencode2` 可在隔离环境验证真实宿主加载，不发模型请求。

@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { Model } from '@opencode/plugin';
 import { describe, expect, it } from 'vitest';
 import { specialists } from '../src/agents.js';
@@ -137,15 +138,53 @@ describe('agent registration', () => {
   });
 });
 
-describe('prompt budget', () => {
-  it('keeps each body below 50 words and each routing description below 25 words', () => {
+describe('specialist prompts', () => {
+  const budgets = { explore: 250, oracle: 350, designer: 300 } as const;
+
+  it.each([
+    'explore',
+    'oracle',
+    'designer',
+  ] as const)('registers the complete %s Markdown body within its budget', async (name) => {
+    const source = await readFile(
+      new URL(`../src/prompts/${name}.md`, import.meta.url),
+      'utf8',
+    );
+    const { editor, agents } = createEditor();
+    registerAgents(editor, parseOptions({}));
+    expect(agents.get(name)?.system).toBe(source.trim());
+    expect(source.trim()).not.toBe('');
+    expect(source.trim().split(/\s+/).length).toBeLessThanOrEqual(
+      budgets[name],
+    );
+    expect(source).toMatch(/## (Deliver and stop|Verify and deliver)/);
+  });
+
+  it('keeps routing descriptions short without introducing a primary prompt', () => {
     for (const specialist of Object.values(specialists)) {
-      expect(specialist.system.split(/\s+/).length).toBeLessThanOrEqual(50);
       expect(specialist.description.split(/\s+/).length).toBeLessThanOrEqual(
         25,
       );
     }
     expect(Object.keys(specialists)).not.toContain('build');
     expect(Object.keys(specialists)).not.toContain('orchestrator');
+  });
+
+  it('retains the decisive role boundaries and evidence requirements', () => {
+    expect(specialists.explore.system).toMatch(/read-only investigation/);
+    expect(specialists.explore.system).toMatch(/file:line evidence/);
+    expect(specialists.explore.system).toMatch(/scope searched/);
+    expect(specialists.oracle.system).toMatch(/Occam's razor and YAGNI/);
+    expect(specialists.oracle.system).toMatch(
+      /OCP at justified extension points/,
+    );
+    expect(specialists.oracle.system).toMatch(/smallest compatible correction/);
+    expect(specialists.oracle.system).toMatch(/explicitly approve and stop/);
+    expect(specialists.designer.system).toMatch(/design-only request/);
+    expect(specialists.designer.system).toMatch(/accessible labels/);
+    expect(specialists.designer.system).toMatch(
+      /inspect the rendered experience/,
+    );
+    expect(specialists.designer.system).toMatch(/unverified states/);
   });
 });

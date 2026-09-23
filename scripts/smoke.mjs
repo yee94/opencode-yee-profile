@@ -1,9 +1,29 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm, symlink } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Agent } from '@opencode/plugin';
 import { Host } from '@opencode/plugin/host';
-import plugin from '../dist/index.mjs';
+
+const root = fileURLToPath(new URL('..', import.meta.url));
+const sandbox = await mkdtemp(join(tmpdir(), 'yee-profile-smoke-'));
+let plugin;
+try {
+  for (const path of ['dist', 'index.js', 'package.json']) {
+    await cp(join(root, path), join(sandbox, path), { recursive: true });
+  }
+  await symlink(
+    join(root, 'node_modules'),
+    join(sandbox, 'node_modules'),
+    'dir',
+  );
+  const isolated = Host.resolve({ directory: sandbox });
+  assert.ok(isolated.server);
+  plugin = (await Host.load(isolated.server)).default;
+} finally {
+  await rm(sandbox, { recursive: true, force: true });
+}
 
 const manifest = JSON.parse(
   await readFile(new URL('../package.json', import.meta.url), 'utf8'),
@@ -35,7 +55,7 @@ let registrations = 0;
 let selected;
 await plugin.setup({
   options: {
-    agents: { oracle: false, designer: { model: 'example/model#high' } },
+    agents: { designer: { model: 'example/model#high' } },
   },
   agent: {
     async transform(callback) {
@@ -59,8 +79,14 @@ await plugin.setup({
 assert.equal(registrations, 1);
 assert.equal(selected, 'build');
 assert.deepEqual(agents.get('build'), build);
-assert.equal(agents.has('oracle'), false);
+for (const name of ['explore', 'oracle', 'designer']) {
+  const source = await readFile(
+    new URL(`../src/prompts/${name}.md`, import.meta.url),
+    'utf8',
+  );
+  assert.equal(agents.get(name).system, source.trim());
+}
 assert.equal(agents.get('designer').model.variant, 'high');
 console.log(
-  'Built plugin smoke passed: native Build preserved; one transform; model variant and disable option work.',
+  'Built plugin smoke passed: native Build preserved; one transform; model variant works; all Markdown prompts inlined and loaded without source files.',
 );
