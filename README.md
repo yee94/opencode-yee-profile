@@ -7,28 +7,32 @@
 
 ## 使用
 
-要求 Node.js 24+、pnpm 10，以及支持 `@opencode/plugin` 2.0.12 API 的 OpenCode V2。
+要求 Node.js 24+，以及支持 `@opencode/plugin` 2.0.12 API 的 OpenCode V2；本地开发使用 pnpm 10。
 这是单包项目，借鉴 `opencode-providers` 的 TypeScript / pnpm / tsdown / Vitest / Biome 工程栈。
+
+在 OpenCode 的 `opencode.jsonc` 中注册 npm 包，建议固定版本：
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    "@yee94/opencode-profile@0.1.0"
+  ]
+}
+```
+
+保留自己的 providers、MCP 和其他无关配置。重新加载 OpenCode 后，在新会话使用 Build；
+已存在会话的 Agent/模型选择不会被插件强制切换。
+
+### 本地开发
 
 ```sh
 pnpm install
 pnpm build
 ```
 
-在 OpenCode 的 `opencode.jsonc` 中注册本地仓库的**绝对路径**：
-
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugins": [
-    "/Users/yee.wang/Code/github/opencode-yee-profile"
-  ]
-}
-```
-
-其他机器替换成本地路径。当前无需发布 npm；不要把尚未发布的包名当成可安装版本。
-保留自己的 providers、MCP 和其他无关配置。重新加载 OpenCode 后，在新会话使用 Build；
-已存在会话的 Agent/模型选择不会被插件强制切换。
+将 `plugins` 中的包名替换为本地仓库的绝对目录路径，例如 `/absolute/path/to/opencode-yee-profile`。
+目录入口会加载构建产物；修改代码后需要重新构建并重新加载插件。
 
 ### 指定模型或关闭专家
 
@@ -38,7 +42,7 @@ pnpm build
 {
   "plugins": [
     {
-      "package": "/absolute/path/to/opencode-yee-profile",
+      "package": "@yee94/opencode-profile@0.1.0",
       "options": {
         "agents": {
           "explore": { "model": "your-provider/your-fast-model" },
@@ -62,7 +66,7 @@ pnpm build
 | --- | --- | --- |
 | Build | 理解、实现、验证 | 仅选为默认入口，Agent 内容完全不修改 |
 | Explore (`explore`) | 找到代码位置与相关调用路径 | 复用原生 ID，短提示词，只读 |
-| Oracle (`oracle`) | 独立判断、权衡、难题分析 | 短提示词，只读 |
+| Oracle (`oracle`) | 架构与分层一致性、OCP、奥卡姆剃刀、YAGNI 审查 | 选择最简单充分的设计，保留有依据的扩展边界；合理即放行；只读 |
 | Designer (`designer`) | 设计并实现 UI/UX | 短提示词，保留宿主/已有工具权限，禁止继续委派 |
 
 Explore / Oracle 采用工具白名单：仅 `read`、`glob`、`grep`；外部目录和敏感 `.env` 文件读取需批准。
@@ -72,6 +76,19 @@ Explore / Oracle 采用工具白名单：仅 `read`、`glob`、`grep`；外部�
 
 **按需不等于强制手动。** 插件没有路由提示或委派流程；Build 根据任务和专家 description 决定是否调用。
 用户也可明确要求使用某个专家。前台、后台和会话续接全部交给 OpenCode 原生 `subagent`。
+
+### Oracle 的审查边界
+
+Oracle 以架构合理性为先，而非防御性驱动；宽出、聚焦结论，不反复纠结细节：
+
+- 以项目约定、已有分层、职责归属、复用机制和真实需求判断设计，而不是套通用防御清单。
+- 遵循奥卡姆剃刀与 YAGNI：选择最简单且足以满足需求的设计，减少无依据的抽象、防御和框架。
+- 考量 OCP（开闭原则）：围绕已知变化方向或明确边界保留扩展点，让未来新增能力尽量通过扩展完成，而不是反复修改稳定核心；不预建假想需求的实现。
+- 接受合理折中，保留必要的安全边界与契约；简洁不等于封死扩展，开放也不等于提前造框架。
+- 只报告有实质代价的结构问题，给出文件行号证据、具体成本和最小兼容修正；不把风格偏好或假设风险当作阻塞项。
+- 架构合理、需求满足就明确放行并结束，不为凑发现反复审查小细节。
+
+它不是每次修改后的必经审批，也不自动修代码。提示词自包含，不依赖外部审查技能或额外工作流。
 
 ### 从 oh-my-opencode-slim 迁移
 

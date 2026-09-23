@@ -30,8 +30,12 @@ describe('agent registration', () => {
     const first = structuredClone(agents);
     registerAgents(editor, parseOptions({}));
     expect(agents).toEqual(first);
-    for (const name of Object.keys(specialists))
-      expect(agents.get(name)?.mode).toBe('subagent');
+    for (const [name, specialist] of Object.entries(specialists))
+      expect(agents.get(name)).toMatchObject({
+        mode: 'subagent',
+        system: specialist.system,
+        description: specialist.description,
+      });
   });
 
   it('disables each role explicitly, including the native explore entry', () => {
