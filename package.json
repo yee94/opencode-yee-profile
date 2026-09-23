@@ -1,0 +1,60 @@
+{
+  "name": "@yee94/opencode-profile",
+  "version": "0.1.0",
+  "description": "Build-first OpenCode V2 plugin: small specialist prompts, no orchestration runtime",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": ">=24",
+    "pnpm": ">=10"
+  },
+  "exports": {
+    ".": "./dist/index.mjs"
+  },
+  "files": [
+    "index.js",
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "check": "pnpm lint && pnpm build && pnpm type-check && pnpm test && pnpm smoke",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:host": "node scripts/host-smoke.mjs",
+    "prepublishOnly": "pnpm check"
+  },
+  "dependencies": {
+    "zod": "^4.1.13"
+  },
+  "peerDependencies": {
+    "@opencode/plugin": "^2.0.12"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.13",
+    "@opencode/client": "2.0.12",
+    "@opencode/plugin": "2.0.12",
+    "@types/node": "^24.10.1",
+    "tsdown": "0.17.2",
+    "typescript": "5.9.3",
+    "vitest": "4.0.15"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yee94/opencode-yee-profile.git"
+  },
+  "license": "MIT"
+}
