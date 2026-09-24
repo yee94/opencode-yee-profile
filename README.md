@@ -90,4 +90,4 @@ pnpm check
 
 将 `plugins`（V2）或 `plugin`（V1）中的包名替换为本仓库的绝对目录路径。修改后重新构建并重新加载插件。
 专家正文在 `src/prompts/*.md`，由 `src/agents.ts` 导入、tsdown 内联到产物；运行时不读取 Markdown 文件。
-`pnpm smoke:host -- opencode2` 验证 V2；`pnpm smoke:host:v1 -- /path/to/opencode-v1` 验证 V1。均在隔离环境运行，不发模型请求。
+`pnpm smoke:host` 验证 V2；`pnpm smoke:host:v1 -- /path/to/opencode-v1` 验证 V1。均在隔离环境运行，不发模型请求。

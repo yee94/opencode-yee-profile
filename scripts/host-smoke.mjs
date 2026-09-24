@@ -6,7 +6,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 const executable =
-  process.argv.slice(2).find((argument) => argument !== '--') || 'opencode2';
+  process.argv.slice(2).find((argument) => argument !== '--') || 'opencode';
 const temporaryRoot = join(tmpdir(), 'opencode');
 await mkdir(temporaryRoot, { recursive: true });
 const temporary = await mkdtemp(join(temporaryRoot, 'yee-profile-host-'));
