@@ -8,5 +8,5 @@ export default defineConfig({
   platform: 'node',
   target: 'node24',
   loader: { '.md': 'text' },
-  external: ['@opencode/plugin'],
+  external: ['@opencode/plugin', '@opencode-ai/plugin', '@opencode-ai/sdk'],
 });
