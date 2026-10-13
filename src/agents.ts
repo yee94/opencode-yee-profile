@@ -13,7 +13,7 @@ export const specialists = {
   },
   explore: {
     description:
-      'Map unfamiliar code to file:line evidence. Skip for a known file or a single lookup.',
+      'Read-only code exploration with file:line evidence. Never implements fixes, including on continuation; return findings to the caller. Skip known-file lookups.',
     system: explorePrompt.trim(),
     readonly: true,
   },

@@ -1,12 +1,29 @@
 import { readFile } from 'node:fs/promises';
 import { Model } from '@opencode/plugin';
 import { describe, expect, it } from 'vitest';
-import { specialists } from '../src/agents.js';
+import { readOnlyPermissions, specialists } from '../src/agents.js';
 import { parseOptions } from '../src/options.js';
 import { registerAgents } from '../src/register.js';
 import { createAgent, createEditor } from './fixture.js';
 
 describe('agent registration', () => {
+  it('ships native V2 configuration matching the specialist permission boundaries', async () => {
+    const config = JSON.parse(
+      await readFile(
+        new URL('../examples/permissions.v2.json', import.meta.url),
+        'utf8',
+      ),
+    );
+    expect(Object.keys(config.agents).sort()).toEqual(
+      Object.keys(specialists).sort(),
+    );
+    for (const name of ['explore', 'oracle'])
+      expect(config.agents[name].permissions).toEqual(readOnlyPermissions());
+    for (const name of ['general', 'designer'])
+      expect(config.agents[name].permissions).toEqual([
+        { action: 'subagent', resource: '*', effect: 'deny' },
+      ]);
+  });
   it('leaves Build and every unrelated agent byte-for-byte unchanged', () => {
     const build = createAgent('build');
     build.system = 'Existing host-specific Build instructions';
@@ -193,6 +210,12 @@ describe('specialist prompts', () => {
     expect(specialists.explore.system).toMatch(/read-only investigation/);
     expect(specialists.explore.system).toMatch(/file:line evidence/);
     expect(specialists.explore.system).toMatch(/scope searched/);
+    expect(specialists.explore.system).toMatch(
+      /read-only when the caller resumes this session/,
+    );
+    expect(specialists.explore.system).toMatch(
+      /implementation belongs to Build or General/,
+    );
     expect(specialists.oracle.system).toMatch(/Occam's razor and YAGNI/);
     expect(specialists.oracle.system).toMatch(
       /OCP at justified extension points/,

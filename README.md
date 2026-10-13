@@ -35,7 +35,15 @@ V1 使用同一个包，配置键是单数 `plugin`：
 | Oracle | 只读架构审查：OCP、奥卡姆剃刀、YAGNI；合理即放行 |
 | Designer | UI/UX 设计与实现 |
 
-General / Designer 保留已有工具权限，禁止递归委派；Explore / Oracle 仅允许 read、glob、grep。
+插件默认将 General / Designer 设为禁止递归委派，将 Explore / Oracle 设为仅允许 read、glob、grep。Explore 被续接并要求修复时也应只回报发现，由 Build / General 实现。
+
+### V2 权限优先级
+
+V2 的配置规则会追加在插件 transform 之后，最后匹配的规则生效。全局 `permissions: [{ "action": "*", "resource": "*", "effect": "allow" }]`（包括兼容的 V1 `permission: { "*": "allow" }`）会重新开放 Explore / Oracle 的编辑、shell 和委派权限，也会覆盖 General / Designer 的禁止递归委派规则。提示词不能代替权限约束。
+
+使用全局宽松权限时，把 [examples/permissions.v2.json](examples/permissions.v2.json) 的 `agents.<id>.permissions` 合并进你的 `opencode.jsonc`，保留已有模型等字段。这些原生 Agent 规则在全局规则之后生效。后续项目级 Agent 配置、插件或会话级权限仍可覆盖它们；排查时应检查最终权限，而非只看插件输出。
+
+插件不会自动写入配置文件。`pnpm smoke:host` 在隔离宿主中验证全局 `* allow` 与上述配置一起使用时的最终权限，并验证原生 Build 保持不变。
 
 ## 配置模型
 
@@ -57,6 +65,8 @@ V1 将 `agents` 改为 `agent`。V2 的 variant 写在模型后，如 `provider/
 省略模型时保留 Agent 已有配置，否则由宿主继承父会话模型。主模型在 `/models` 中选择。
 
 关闭某个专家时，使用插件选项：
+
+V2 若已配置该专家的原生 `agents.<id>` 条目，请同时移除该条目，或设置 `agents.<id>.disabled: true`，否则后加载的配置会重新创建它。
 
 ```jsonc
 {
