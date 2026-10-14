@@ -2,6 +2,7 @@ import { Model } from '@opencode/plugin';
 import type { AgentEditor } from '@opencode/plugin/promise/agent';
 import { readOnlyPermissions, specialists } from './agents.js';
 import { agentNames, type Options } from './options.js';
+import { constrainPermissions } from './permissions.js';
 
 export function registerAgents(editor: AgentEditor, options: Options): void {
   const build = editor.get('build');
@@ -26,7 +27,10 @@ export function registerAgents(editor: AgentEditor, options: Options): void {
       agent.system = specialist.system;
       if (settings?.model) agent.model = Model.Ref.parse(settings.model);
       if (specialist.readonly) {
-        agent.permissions = readOnlyPermissions();
+        agent.permissions = constrainPermissions(
+          [...readOnlyPermissions(), ...agent.permissions],
+          true,
+        );
       } else {
         agent.permissions = [
           ...agent.permissions.filter((rule) => rule.action !== 'subagent'),

@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
+import { startModelFixture } from './fixtures/model.mjs';
 
 const executable =
   process.argv.slice(2).find((argument) => argument !== '--') || 'opencode';
@@ -36,6 +37,7 @@ for (const name of Object.keys(process.env)) delete process.env[name];
 Object.assign(process.env, environment);
 const { OpenCode } = await import('@opencode/client');
 const location = { directory: project };
+const model = await startModelFixture();
 let child;
 
 async function stop() {
@@ -102,10 +104,12 @@ try {
   await writeFile(
     join(environment.OPENCODE_CONFIG_DIR, 'opencode.json'),
     JSON.stringify({
+      ...model.config,
       permissions: [{ action: '*', resource: '*', effect: 'allow' }],
       agents: { 'smoke-ready': { hidden: true } },
     }),
   );
+  await writeFile(join(project, 'fixture.txt'), 'original\n');
   let client = await start();
   await client.session.create({ location });
   async function waitForAgents(requiredID) {
@@ -137,16 +141,26 @@ try {
     false,
     'Global configuration leaked into the smoke test',
   );
+  async function run(sessionID, text) {
+    await client.session.prompt({ sessionID, text });
+    await client.session.wait(
+      { sessionID },
+      { signal: AbortSignal.timeout(45_000) },
+    );
+  }
+  const native = await client.session.create({ location, agent: 'build' });
+  await run(native.id, 'fixture:known Read fixture.txt directly.');
+  const nativeRequest = model.requests.find((request) =>
+    request.tools?.some((tool) => tool.function.name === 'read'),
+  );
+  assert.ok(
+    nativeRequest,
+    'Native Build did not reach the local model fixture',
+  );
 
   await writeFile(
     join(project, 'opencode.json'),
     JSON.stringify({
-      ...JSON.parse(
-        await readFile(
-          new URL('../examples/permissions.v2.json', import.meta.url),
-          'utf8',
-        ),
-      ),
       plugins: [
         {
           package: pluginPath,
@@ -176,26 +190,34 @@ try {
     /scoped engineering task/,
   );
   assert.equal(installed.get('general')?.model?.variant, 'high');
-  for (const name of ['general', 'designer']) {
-    assert.equal(
-      installed
-        .get(name)
-        ?.permissions.findLast(
-          (rule) =>
-            ['*', 'subagent'].includes(rule.action) && rule.resource === '*',
-        )?.effect,
-      'deny',
-      `Global allow must not reopen ${name} delegation`,
-    );
-  }
   assert.equal(installed.get('designer')?.mode, 'subagent');
   assert.equal(installed.get('designer')?.model?.variant, 'high');
   assert.match(
     installed.get('explore')?.description ?? '',
     /file:line evidence/,
   );
-  for (const name of ['explore', 'oracle']) {
-    const permissions = installed.get(name)?.permissions ?? [];
+  const parent = await client.session.create({ location, agent: 'build' });
+  for (const name of ['explore', 'oracle', 'general', 'designer']) {
+    const child = await client.session.create({
+      location,
+      parentID: parent.id,
+      agent: name,
+    });
+    await client.session.update({
+      sessionID: child.id,
+      permissions: [{ action: '*', resource: '*', effect: 'allow' }],
+    });
+    await client.session.prompt({
+      sessionID: child.id,
+      text: 'Inspect the fixture',
+      resume: false,
+    });
+    const { permissions } = await client.session.get({ sessionID: child.id });
+    if (name === 'general' || name === 'designer') {
+      assert.equal(permissions.at(-1).action, 'subagent');
+      assert.equal(permissions.at(-1).effect, 'deny');
+      continue;
+    }
     for (const action of [
       'edit',
       'shell',
@@ -224,10 +246,92 @@ try {
       );
     }
   }
+  await run(
+    parent.id,
+    'fixture:broad Explore the unfamiliar fixture module across files.',
+  );
+  assert.deepEqual(model.failures, []);
+  assert.equal(
+    await readFile(join(project, 'fixture.txt'), 'utf8'),
+    'original\n',
+  );
+  const messages = await client.session.context({ sessionID: parent.id });
+  assert.ok(
+    JSON.stringify(messages).includes(
+      'Fixture exploration and resumed-write probe completed.',
+    ),
+    JSON.stringify(messages),
+  );
+  const systemText = (request) =>
+    request.messages
+      .filter((message) => ['system', 'developer'].includes(message.role))
+      .map((message) => JSON.stringify(message.content))
+      .join('\n');
+  const exploration = model.requests.filter((request) =>
+    systemText(request).includes('# Explore'),
+  );
+  assert.ok(
+    exploration.length >= 4,
+    'Expected initial and resumed Explore model calls',
+  );
+  for (const request of exploration) {
+    const names = request.tools.map((tool) => tool.function.name);
+    for (const blocked of ['patch', 'shell', 'execute', 'subagent'])
+      assert.ok(!names.includes(blocked), `Explore exposes ${blocked}`);
+    assert.ok(names.includes('read'));
+    assert.ok(!systemText(request).includes('## Exploration delegation'));
+  }
+  const buildRequests = model.requests.filter((request) =>
+    systemText(request).includes('## Exploration delegation'),
+  );
+  const routing = (
+    await readFile(
+      new URL('../src/prompts/build-routing.md', import.meta.url),
+      'utf8',
+    )
+  ).trim();
+  assert.ok(
+    buildRequests.length >= 3,
+    'Build routing missing from the native delegation loop',
+  );
+  for (const request of buildRequests) {
+    assert.equal(
+      systemText(request).split('## Exploration delegation').length - 1,
+      1,
+    );
+    assert.ok(
+      request.tools.some((tool) => tool.function.name === 'patch'),
+      'Build lost native editing tools',
+    );
+    assert.deepEqual(
+      request.messages[0],
+      {
+        ...nativeRequest.messages[0],
+        content: `${nativeRequest.messages[0].content}\n${routing}`,
+      },
+      'Build must preserve the complete native provider prompt and append only the fixed routing block',
+    );
+  }
+  const childID = JSON.stringify(messages)
+    .match(/ses_[a-zA-Z0-9]+/g)
+    ?.find((id) => id !== parent.id);
+  assert.ok(childID, 'Missing native child session');
+  await run(childID, 'fixture:shell Write the repair using shell instead.');
+  assert.equal(
+    await readFile(join(project, 'fixture.txt'), 'utf8'),
+    'original\n',
+  );
+  const known = await client.session.create({ location, agent: 'build' });
+  await run(known.id, 'fixture:known Read fixture.txt directly.');
+  const knownMessages = JSON.stringify(
+    await client.session.context({ sessionID: known.id }),
+  );
+  assert.ok(knownMessages.includes('original'));
+  assert.ok(!knownMessages.includes('"tool":"subagent"'));
   const configPath = join(project, 'opencode.json');
   const config = JSON.parse(await readFile(configPath, 'utf8'));
-  delete config.agents.oracle;
   config.plugins[0].options.agents.oracle = false;
+  config.plugins[0].options.agents.explore = false;
   const disabledConfig = JSON.stringify(config);
   await writeFile(configPath, disabledConfig);
   await stop();
@@ -235,12 +339,24 @@ try {
   await client.session.create({ location });
   const disabled = await waitForAgents('designer');
   assert.equal(disabled.has('oracle'), false);
+  assert.equal(disabled.has('explore'), false);
   assert.deepEqual(disabled.get('build'), baseline.get('build'));
   assert.equal(await readFile(configPath, 'utf8'), disabledConfig);
+  const off = await client.session.create({ location, agent: 'build' });
+  const requestCount = model.requests.length;
+  await run(off.id, 'fixture:known Read fixture.txt directly.');
+  assert.ok(
+    model.requests
+      .slice(requestCount)
+      .every(
+        (request) => !systemText(request).includes('## Exploration delegation'),
+      ),
+  );
   console.log(
-    'Real V2 host smoke passed: Build unchanged; model options and configured specialist permissions survive global allow. No model requests.',
+    'Real V2 host smoke passed: native Build preserved; internal child permissions survive global allow; routing delivered; native Explore read and resumed patch denial verified with a local model fixture. No external model requests.',
   );
 } finally {
   await stop();
+  await model.close();
   await rm(temporary, { recursive: true, force: true });
 }

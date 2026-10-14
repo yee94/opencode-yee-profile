@@ -1,6 +1,7 @@
 import { Plugin } from '@opencode/plugin';
 import { parseOptions } from './options.js';
 import { registerAgents } from './register.js';
+import { createRuntime } from './runtime.js';
 import { v1Server } from './v1.js';
 
 export default {
@@ -11,6 +12,9 @@ export default {
       await context.agent.transform((editor) =>
         registerAgents(editor, options),
       );
+      const runtime = createRuntime(context, options);
+      await context.session.hook('prompt', runtime.prompt);
+      await context.session.hook('context', runtime.context);
     },
   }),
   server: v1Server,

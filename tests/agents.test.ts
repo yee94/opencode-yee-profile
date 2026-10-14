@@ -1,29 +1,12 @@
 import { readFile } from 'node:fs/promises';
 import { Model } from '@opencode/plugin';
 import { describe, expect, it } from 'vitest';
-import { readOnlyPermissions, specialists } from '../src/agents.js';
+import { specialists } from '../src/agents.js';
 import { parseOptions } from '../src/options.js';
 import { registerAgents } from '../src/register.js';
 import { createAgent, createEditor } from './fixture.js';
 
 describe('agent registration', () => {
-  it('ships native V2 configuration matching the specialist permission boundaries', async () => {
-    const config = JSON.parse(
-      await readFile(
-        new URL('../examples/permissions.v2.json', import.meta.url),
-        'utf8',
-      ),
-    );
-    expect(Object.keys(config.agents).sort()).toEqual(
-      Object.keys(specialists).sort(),
-    );
-    for (const name of ['explore', 'oracle'])
-      expect(config.agents[name].permissions).toEqual(readOnlyPermissions());
-    for (const name of ['general', 'designer'])
-      expect(config.agents[name].permissions).toEqual([
-        { action: 'subagent', resource: '*', effect: 'deny' },
-      ]);
-  });
   it('leaves Build and every unrelated agent byte-for-byte unchanged', () => {
     const build = createAgent('build');
     build.system = 'Existing host-specific Build instructions';
@@ -142,7 +125,20 @@ describe('agent registration', () => {
     }
     for (const action of ['read', 'glob', 'grep'])
       expect(permissionFor(action)).toBe('allow');
-    expect(permissionFor('external_directory')).toBe('ask');
+    expect(permissionFor('external_directory')).toBe('allow');
+  });
+
+  it('preserves earlier host read restrictions when registering a read-only agent', () => {
+    const explore = createAgent('explore');
+    const restriction = {
+      action: 'read',
+      resource: 'private/**',
+      effect: 'deny' as const,
+    };
+    explore.permissions.push(restriction);
+    const { editor, agents } = createEditor([explore]);
+    registerAgents(editor, parseOptions({}));
+    expect(agents.get('explore')?.permissions).toContainEqual(restriction);
   });
 
   it.each([

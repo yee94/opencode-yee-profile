@@ -52,12 +52,16 @@ const agents = new Map(
 );
 const build = structuredClone(agents.get('build'));
 let registrations = 0;
+const sessionHooks = new Map();
 let selected;
 await plugin.setup({
   options: {
     agents: { designer: { model: 'example/model#high' } },
   },
   agent: {
+    async list() {
+      return { data: [...agents.values()] };
+    },
     async transform(callback) {
       registrations++;
       callback({
@@ -75,10 +79,39 @@ await plugin.setup({
       return { dispose: async () => {} };
     },
   },
+  session: {
+    async hook(name, callback) {
+      sessionHooks.set(name, callback);
+      return { dispose: async () => {} };
+    },
+    async get() {
+      return { id: 'ses_build' };
+    },
+  },
 });
 assert.equal(registrations, 1);
 assert.equal(selected, 'build');
 assert.deepEqual(agents.get('build'), build);
+assert.deepEqual([...sessionHooks.keys()], ['prompt', 'context']);
+const event = {
+  agent: 'build',
+  sessionID: 'ses_build',
+  system: [{ type: 'text', text: 'Native Build' }],
+  tools: { subagent: {} },
+};
+await sessionHooks.get('context')(event);
+assert.deepEqual(event.system, [
+  { type: 'text', text: 'Native Build' },
+  {
+    type: 'text',
+    text: (
+      await readFile(
+        new URL('../src/prompts/build-routing.md', import.meta.url),
+        'utf8',
+      )
+    ).trim(),
+  },
+]);
 const v1Config = {};
 const hooks = await plugin.server({}, {});
 assert.deepEqual(Object.keys(hooks), ['config']);
@@ -95,5 +128,5 @@ for (const name of ['general', 'explore', 'oracle', 'designer']) {
 }
 assert.equal(agents.get('designer').model.variant, 'high');
 console.log(
-  'Built plugin smoke passed: native Build preserved; one transform; model variant works; all Markdown prompts inlined and loaded without source files.',
+  'Built plugin smoke passed: native Build preserved; one transform and two scoped hooks; all Markdown prompts inlined and loaded without source files.',
 );
