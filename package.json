@@ -1,7 +1,8 @@
 {
   "name": "@yee94/opencode-profile",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Build-first OpenCode V1/V2 plugin: focused specialists, no orchestration runtime",
+  "icon": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='currentColor'%20stroke-width='1.8'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M12%2017v-5M12%2012%205.5%207M12%2012l6.5-5M12%2012V7'/%3E%3Ccircle%20cx='4'%20cy='5.5'%20r='2'/%3E%3Ccircle%20cx='12'%20cy='4.5'%20r='2'/%3E%3Ccircle%20cx='20'%20cy='5.5'%20r='2'/%3E%3Ccircle%20cx='12'%20cy='19'%20r='2.5'/%3E%3C/svg%3E",
   "type": "module",
   "main": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
@@ -14,6 +15,7 @@
     ".": "./dist/index.mjs"
   },
   "files": [
+    "icon.svg",
     "index.js",
     "dist",
     "README.md",

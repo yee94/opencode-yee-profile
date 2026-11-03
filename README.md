@@ -4,6 +4,8 @@ OpenCode V1/V2 插件：保留原生 Build，提供 General、Explore、Oracle�
 
 从 `0.2.0` 起支持 V1/V2；`0.1.x` 仅支持 V2。
 
+插件图标采用 Y 形专家分支，透明底、`currentColor` 单色 SVG。源文件为 [`icon.svg`](icon.svg)，`package.json` 顶层 `icon` 内嵌同一图形的 data URI，不依赖远程图片。
+
 ## 使用
 
 需要 Node.js 24+，以及 OpenCode V1 **1.18.29+** 或 V2 **2.0.27+**。
@@ -12,7 +14,7 @@ V2，在 `opencode.jsonc` 中加入：
 
 ```jsonc
 {
-  "plugins": ["@yee94/opencode-profile@0.3.0"]
+  "plugins": ["@yee94/opencode-profile@0.3.1"]
 }
 ```
 
@@ -20,7 +22,7 @@ V1 使用同一个包，配置键是单数 `plugin`：
 
 ```jsonc
 {
-  "plugin": ["@yee94/opencode-profile@0.3.0"]
+  "plugin": ["@yee94/opencode-profile@0.3.1"]
 }
 ```
 
@@ -73,7 +75,7 @@ V2 若已配置该专家的原生 `agents.<id>` 条目，请同时移除该条�
 ```jsonc
 {
   "plugins": [{
-    "package": "@yee94/opencode-profile@0.3.0",
+    "package": "@yee94/opencode-profile@0.3.1",
     "options": { "agents": { "oracle": false } }
   }]
 }
@@ -84,7 +86,7 @@ V1 的插件选项使用元组：
 ```jsonc
 {
   "plugin": [[
-    "@yee94/opencode-profile@0.3.0",
+    "@yee94/opencode-profile@0.3.1",
     { "agents": { "oracle": false } }
   ]]
 }
