@@ -1,0 +1,115 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org/
+
+      - name: Validate release tag
+        id: release
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          import { releaseMetadata } from './scripts/release-metadata.mjs';
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+          const release = releaseMetadata(pkg, process.env.GITHUB_REF_NAME);
+          appendFileSync(process.env.GITHUB_OUTPUT, `dist-tag=${release.distTag}\n`);
+          JS
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+
+      - name: Pack and check existing version
+        id: artifact
+        run: |
+          pnpm pack --pack-destination "$RUNNER_TEMP/npm-release"
+          node --input-type=module <<'JS'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          import { tarballIntegrity, assertPublishedArtifact } from './scripts/release-metadata.mjs';
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+          const filename = `${pkg.name.replace(/^@/, '').replace('/', '-')}-${pkg.version}.tgz`;
+          const tarball = join(process.env.RUNNER_TEMP, 'npm-release', filename);
+          const integrity = tarballIntegrity(readFileSync(tarball));
+          const response = await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg.name)}/${pkg.version}`, { cache: 'no-store' });
+          let published = false;
+          if (response.ok) {
+            assertPublishedArtifact(await response.json(), { ...pkg, integrity });
+            published = true;
+          } else if (response.status !== 404) {
+            throw new Error(`npm registry returned ${response.status}`);
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT, `tarball=${tarball}\nintegrity=${integrity}\npublished=${published}\n`);
+          JS
+
+      - name: Publish to public npm
+        if: steps.artifact.outputs.published != 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DIST_TAG: ${{ steps.release.outputs.dist-tag }}
+          TARBALL: ${{ steps.artifact.outputs.tarball }}
+        run: |
+          test -n "$NODE_AUTH_TOKEN" || { echo 'Missing NPM_TOKEN repository secret'; exit 1; }
+          pnpm publish "$TARBALL" --no-git-checks --ignore-scripts --access public --tag "$DIST_TAG" --registry=https://registry.npmjs.org/
+
+      - name: Verify public registry metadata
+        env:
+          EXPECTED_INTEGRITY: ${{ steps.artifact.outputs.integrity }}
+          DIST_TAG: ${{ steps.release.outputs.dist-tag }}
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs';
+          import { setTimeout } from 'node:timers/promises';
+          import { assertPublishedArtifact } from './scripts/release-metadata.mjs';
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+          const base = `https://registry.npmjs.org/${encodeURIComponent(pkg.name)}`;
+          for (let attempt = 0; ; attempt++) {
+            const response = await fetch(`${base}/${pkg.version}?verify=${Date.now()}`, { cache: 'no-store' });
+            if (response.ok) {
+              assertPublishedArtifact(await response.json(), { ...pkg, integrity: process.env.EXPECTED_INTEGRITY });
+              const tagsResponse = await fetch(`${base}?verify=${Date.now()}`, { cache: 'no-store' });
+              if (!tagsResponse.ok) throw new Error(`npm dist-tags returned ${tagsResponse.status}`);
+              const metadata = await tagsResponse.json();
+              if (metadata['dist-tags']?.[process.env.DIST_TAG] === pkg.version) {
+                console.log(`Verified ${pkg.name}@${pkg.version}: exact tarball and ${process.env.DIST_TAG}`);
+                break;
+              }
+            } else if (response.status !== 404 && response.status < 500) {
+              throw new Error(`npm verification returned ${response.status}`);
+            }
+            if (attempt >= 60) throw new Error('npm version or dist-tag is still unavailable after 10 minutes');
+            await setTimeout(10000);
+          }
+          JS
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          DIST_TAG: ${{ steps.release.outputs.dist-tag }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then exit 0; fi
+          flags=()
+          if [ "$DIST_TAG" = next ]; then flags+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" --verify-tag --generate-notes "${flags[@]}"

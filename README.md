@@ -96,6 +96,8 @@ V1 的插件选项使用元组：
 
 ## 本地开发
 
+CI 在 push/PR 时运行；npm 发布只由与 `package.json.version` 一致的 `v<version>` 标签触发，使用仓库的 `NPM_TOKEN` Secret。稳定版发布到 `latest`，预发布版发布到 `next`。流程先验证、打包，再发布同一个 tarball，核验公网 npm 的完整性与 dist-tag 后创建 GitHub Release；详见[发布说明](docs/releasing.md)。
+
 ```sh
 pnpm install
 pnpm build
