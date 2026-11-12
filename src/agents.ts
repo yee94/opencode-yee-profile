@@ -7,7 +7,7 @@ import oraclePrompt from './prompts/oracle.md';
 export const specialists = {
   general: {
     description:
-      'Execute a scoped engineering task: implement, verify, and report results. Use for delegated coding work with a clear outcome.',
+      'Execute an independent engineering workstream: implement, verify, and report. Not for small fixes, syncs, or confirmations the parent agent can do directly.',
     system: generalPrompt.trim(),
     readonly: false,
   },

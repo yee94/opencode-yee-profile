@@ -279,10 +279,10 @@ try {
     for (const blocked of ['patch', 'shell', 'execute', 'subagent'])
       assert.ok(!names.includes(blocked), `Explore exposes ${blocked}`);
     assert.ok(names.includes('read'));
-    assert.ok(!systemText(request).includes('## Exploration delegation'));
+    assert.ok(!systemText(request).includes('## Subagent delegation'));
   }
   const buildRequests = model.requests.filter((request) =>
-    systemText(request).includes('## Exploration delegation'),
+    systemText(request).includes('## Subagent delegation'),
   );
   const routing = (
     await readFile(
@@ -296,7 +296,7 @@ try {
   );
   for (const request of buildRequests) {
     assert.equal(
-      systemText(request).split('## Exploration delegation').length - 1,
+      systemText(request).split('## Subagent delegation').length - 1,
       1,
     );
     assert.ok(
@@ -349,7 +349,7 @@ try {
     model.requests
       .slice(requestCount)
       .every(
-        (request) => !systemText(request).includes('## Exploration delegation'),
+        (request) => !systemText(request).includes('## Subagent delegation'),
       ),
   );
   console.log(

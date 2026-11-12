@@ -202,6 +202,11 @@ describe('specialist prompts', () => {
   it('retains the decisive role boundaries and evidence requirements', () => {
     expect(specialists.general.system).toMatch(/scoped engineering task/);
     expect(specialists.general.system).toMatch(/concurrent work/);
+    expect(specialists.general.system).toMatch(/small adjacent change/);
+    expect(specialists.general.system).toMatch(
+      /shared contract or progress files/,
+    );
+    expect(specialists.general.description).toMatch(/Not for small fixes/);
     expect(specialists.general.system).toMatch(/verification results/);
     expect(specialists.explore.system).toMatch(/read-only investigation/);
     expect(specialists.explore.system).toMatch(/file:line evidence/);
@@ -210,7 +215,7 @@ describe('specialist prompts', () => {
       /read-only when the caller resumes this session/,
     );
     expect(specialists.explore.system).toMatch(
-      /implementation belongs to Build or General/,
+      /implementation belongs to the caller or General/,
     );
     expect(specialists.oracle.system).toMatch(/Occam's razor and YAGNI/);
     expect(specialists.oracle.system).toMatch(

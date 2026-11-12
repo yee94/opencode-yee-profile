@@ -14,7 +14,7 @@ V2，在 `opencode.jsonc` 中加入：
 
 ```jsonc
 {
-  "plugins": ["@yee94/opencode-profile@0.3.1"]
+  "plugins": ["@yee94/opencode-profile@0.4.0"]
 }
 ```
 
@@ -22,7 +22,7 @@ V1 使用同一个包，配置键是单数 `plugin`：
 
 ```jsonc
 {
-  "plugin": ["@yee94/opencode-profile@0.3.1"]
+  "plugin": ["@yee94/opencode-profile@0.4.0"]
 }
 ```
 
@@ -37,7 +37,7 @@ V1 使用同一个包，配置键是单数 `plugin`：
 | Oracle | 只读架构审查：OCP、奥卡姆剃刀、YAGNI；合理即放行 |
 | Designer | UI/UX 设计与实现 |
 
-General / Designer 禁止递归委派；Explore / Oracle 仅使用 read、glob、grep。Explore 被续接并要求修复时也应只回报发现，由 Build / General 实现。
+General / Designer 禁止递归委派；Explore / Oracle 仅使用 read、glob、grep。Explore 被续接并要求修复时也应只回报发现，由父 agent / General 实现。
 
 ### V2 内部权限与探索委派
 
@@ -45,7 +45,7 @@ General / Designer 禁止递归委派；Explore / Oracle 仅使用 read、glob�
 
 这解决了 V2 在插件 transform 后追加全局 `* allow` 导致的权限覆盖，无需添加原生 Agent 权限配置。排查时查看子会话的 `permissions`，静态 Agent 列表不是执行时权限的全貌。插件只处理启用的四个专家子会话。
 
-Explore 是按需选择，不是所有任务的前置步骤。只有对陌生代码存在较大不确定性、独立探查的收益超过委派成本时，Build 才考虑调用；跨文件本身不构成必须委派的理由。几次定向查找、已知文件、明确修复、小改动和常规检查直接处理。明确要求不委派时遵循用户要求。Explore 不可用、被禁用或禁止调用时不追加指引。该指引是给模型的路由策略，不是强制调度器；模型是否选择委派仍需实际任务评估。
+Explore 是按需选择，不是所有任务的前置步骤。只有对陌生代码存在较大不确定性、独立探查的收益超过委派成本时，Build 才考虑调用；跨文件本身不构成必须委派的理由。几次定向查找、已知文件、明确修复、小改动和常规检查直接处理。明确要求不委派时遵循用户要求。General 只接能独立推进的工作线；小修复、回归、确认由父 agent 直接处理，即使子会话仍在运行。父 agent 不给子会话划独占目录，共享契约与进度写入文件供子会话直接读取，对同一子会话的追加指令合并发送。Explore 不可用、被禁用或禁止调用时不追加指引。该指引是给模型的路由策略，不是强制调度器；模型是否选择委派仍需实际任务评估。
 
 Build 的注册提示词、模型、权限和工具保持原样；插件只向 Build 模型请求追加一段固定文本。插件不改写配置文件或会话消息，不引入 Orchestrator、任务看板或后台调度。V1 保留启动配置回调，其专家权限由 V1 原生合并机制执行。
 
@@ -75,7 +75,7 @@ V2 若已配置该专家的原生 `agents.<id>` 条目，请同时移除该条�
 ```jsonc
 {
   "plugins": [{
-    "package": "@yee94/opencode-profile@0.3.1",
+    "package": "@yee94/opencode-profile@0.4.0",
     "options": { "agents": { "oracle": false } }
   }]
 }
@@ -86,7 +86,7 @@ V1 的插件选项使用元组：
 ```jsonc
 {
   "plugin": [[
-    "@yee94/opencode-profile@0.3.1",
+    "@yee94/opencode-profile@0.4.0",
     { "agents": { "oracle": false } }
   ]]
 }

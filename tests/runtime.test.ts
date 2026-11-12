@@ -209,7 +209,16 @@ describe('Build exploration routing', () => {
     expect(f.event.tools).toEqual(before.tools);
     expect(f.event.messages).toEqual(before.messages);
     expect(f.update).not.toHaveBeenCalled();
-    expect(buildRouting.split(/\s+/).length).toBeLessThanOrEqual(120);
+    expect(buildRouting.split(/\s+/).length).toBeLessThanOrEqual(170);
+  });
+
+  it('keeps small work in the parent agent and routes coordination through shared files', () => {
+    expect(buildRouting).toMatch(/small edits, regressions, confirmations/);
+    expect(buildRouting).toMatch(/even while subagents run/);
+    expect(buildRouting).toMatch(/independent workstream/);
+    expect(buildRouting).toMatch(/exclusive file ownership/);
+    expect(buildRouting).toMatch(/instead of relaying sync messages/);
+    expect(buildRouting).toMatch(/Batch follow-ups/);
   });
 
   it.each([
